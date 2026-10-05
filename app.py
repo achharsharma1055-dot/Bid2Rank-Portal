@@ -23,17 +23,12 @@ def generate_ai_response(system_prompt, user_text):
     if not ai_ready:
         return "⚠️ Error: AI API Key is missing."
     try:
-        model = genai.GenerativeModel('gemini-1.5-pro-latest', system_instruction=system_prompt)
+        # Changed to 'gemini-1.5-flash' to fix the 404 error
+        model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_prompt)
         response = model.generate_content(user_text)
         return response.text
     except Exception as e:
-        # Fallback to standard gemini-pro if 1.5 fails
-        try:
-            model = genai.GenerativeModel('gemini-pro')
-            response = model.generate_content(system_prompt + "\n\n" + user_text)
-            return response.text
-        except Exception as e2:
-            return f"⚠️ API Error: {str(e2)}"
+        return f"⚠️ API Error: {str(e)}"
 
 def load_brain(filepath):
     filename = filepath.split('/')[-1]
