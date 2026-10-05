@@ -23,14 +23,21 @@ else:
 # FIX: Changed model to 'gemini-1.5-pro-latest' to fix the 404 error
 def generate_ai_response(system_prompt, user_text):
     if not ai_ready:
-        return "⚠️ Error: AI API Key is missing."
+        return "⚠️ Error: AI API Key is missing. Please check your Render Environment Variables."
+    
+    # PERMANENT FIX: Try the exact model Google recommended, with a dynamic fallback
     try:
-        # 2026 Update: Changed to 'gemini-2.5-flash'
-        model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=system_prompt)
+        model = genai.GenerativeModel('gemini-3.8-flash', system_instruction=system_prompt)
         response = model.generate_content(user_text)
         return response.text
-    except Exception as e:
-        return f"⚠️ API Error: {str(e)}"
+    except Exception:
+        try:
+            # Universal fallback alias
+            model = genai.GenerativeModel('gemini-flash-latest', system_instruction=system_prompt)
+            response = model.generate_content(user_text)
+            return response.text
+        except Exception as e:
+            return f"⚠️ API Error: {str(e)}"
 
 def load_brain(filepath):
     filename = filepath.split('/')[-1]
