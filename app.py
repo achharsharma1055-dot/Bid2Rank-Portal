@@ -190,11 +190,18 @@ st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
     html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    /* Hide Streamlit Top UI (Running icon, menu, etc) */
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
+    [data-testid="stHeader"] {display: none;}
+    [data-testid="stToolbar"] {display: none;}
     [data-testid="collapsedControl"] { display: none; }
+    .stApp > header {display: none !important;}
     
-    .stApp { background-color: #0A0A0F; color: #F8FAFC; }
+    /* Overall App Brightness */
+    .stApp { background-color: #0A0A0F; color: #FFFFFF !important; }
     
+    /* Responsive Navigation */
     div[data-testid="stRadio"] > div {
         display: flex;
         flex-direction: row;
@@ -204,22 +211,27 @@ st.markdown("""
         border-radius: 12px;
         border: 1px solid rgba(255,255,255,0.1);
         flex-wrap: wrap;
+        gap: 10px;
     }
     
-    h1 { color: #FFFFFF; font-weight: 800; font-size: 2.5rem; margin-bottom: 1rem; }
-    h2, h3 { color: #94A3B8; font-weight: 600; }
+    /* Headers - Brighter for Mobile */
+    h1 { color: #FFFFFF !important; font-weight: 800; font-size: 2.2rem; margin-bottom: 1rem; }
+    h2, h3, h4, h5, h6, p, span, label { color: #F8FAFC !important; font-weight: 600; }
     
+    /* Inputs */
     .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-        background: rgba(255, 255, 255, 0.05) !important;
-        color: white !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
+        background: rgba(255, 255, 255, 0.1) !important; /* Brighter background */
+        color: #FFFFFF !important; /* Pure white text */
+        border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 8px !important;
         padding: 15px !important;
+        font-size: 16px !important; /* Prevents iOS auto-zoom */
     }
     .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
         border: 1px solid #3B82F6 !important;
     }
     
+    /* Buttons */
     .stButton>button {
         background: #2563EB !important;
         color: white !important;
@@ -227,10 +239,21 @@ st.markdown("""
         border: none !important;
         padding: 15px 30px !important;
         font-weight: 600 !important;
+        font-size: 16px !important;
         width: 100%;
         transition: 0.3s;
     }
     .stButton>button:hover { background: #1D4ED8 !important; transform: translateY(-2px); }
+    
+    /* Mobile Fixes */
+    @media (max-width: 768px) {
+        div[data-testid="stRadio"] > div {
+            flex-direction: column !important; /* Stack vertically on phones */
+            align-items: stretch;
+        }
+        h1 { font-size: 1.8rem; text-align: center; }
+        .stApp { padding-top: 10px; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
