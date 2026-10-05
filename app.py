@@ -1,4 +1,87 @@
 import streamlit as st
+
+# ==========================================
+# 1. IMMEDIATE UI INITIALIZATION (MUST BE FIRST)
+# ==========================================
+st.set_page_config(page_title="Bid2Rank | Pro SEO Suite", page_icon="⚡", layout="wide")
+
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    /* AGGRESSIVELY HIDE STREAMLIT TOP UI (Running icon, menu, etc) */
+    header {visibility: hidden !important; display: none !important;}
+    .stApp > header {visibility: hidden !important; display: none !important;}
+    [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    .stDeployButton {display: none !important;}
+    
+    /* Overall App Brightness */
+    .stApp { background-color: #0A0A0F !important; color: #FFFFFF !important; }
+    
+    /* Responsive Navigation */
+    div[data-testid="stRadio"] > div {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        background: #111118;
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    /* Headers - Brighter for Mobile */
+    h1 { color: #FFFFFF !important; font-weight: 800; font-size: 2.2rem; margin-bottom: 1rem; }
+    h2, h3, h4, h5, h6, p, span, label { color: #F8FAFC !important; font-weight: 600; }
+    
+    /* Inputs */
+    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
+        background: rgba(255, 255, 255, 0.1) !important; 
+        color: #FFFFFF !important; 
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        border-radius: 8px !important;
+        padding: 15px !important;
+        font-size: 16px !important; 
+    }
+    .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
+        border: 1px solid #3B82F6 !important;
+    }
+    
+    /* Buttons */
+    .stButton>button {
+        background: #2563EB !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 15px 30px !important;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+        width: 100%;
+        transition: 0.3s;
+    }
+    .stButton>button:hover { background: #1D4ED8 !important; transform: translateY(-2px); }
+    
+    /* Mobile Fixes */
+    @media (max-width: 768px) {
+        div[data-testid="stRadio"] > div {
+            flex-direction: column !important; 
+            align-items: stretch;
+        }
+        h1 { font-size: 1.8rem; text-align: center; }
+        .stApp { padding-top: 10px; }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 2. HEAVY BACKEND IMPORTS (DELAYED LOADING)
+# ==========================================
 import os
 import requests
 import json
@@ -10,7 +93,6 @@ from fpdf import FPDF
 # --- INITIALIZE ENVIRONMENT ---
 load_dotenv()
 
-# Hardcoded Cohere API Key 
 COHERE_API_KEY = os.getenv("COHERE_API_KEY", "cZqVl9Q8VMwvHhDUG3n8v1rHypwWEQP7FNWUlkLl")
 SERP_KEY = os.getenv("SERP_API_KEY", "6e331ec051647949b4a4745dce40cd91fca4445d")
 
@@ -182,83 +264,6 @@ def get_live_rank(keyword, target_url, serp_key):
         return "⚠️ Error: Invalid response from Google."
     except Exception as e:
         return f"⚠️ API Connection Error: {str(e)}"
-
-# --- PORTAL CONFIGURATION ---
-st.set_page_config(page_title="Bid2Rank | Pro SEO Suite", page_icon="⚡", layout="wide")
-
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
-    
-    /* AGGRESSIVELY HIDE STREAMLIT TOP UI (Running icon, menu, etc) */
-    header {visibility: hidden !important; display: none !important;}
-    .stApp > header {visibility: hidden !important; display: none !important;}
-    [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
-    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-    [data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    footer {visibility: hidden !important; display: none !important;}
-    .stDeployButton {display: none !important;}
-    
-    /* Overall App Brightness */
-    .stApp { background-color: #0A0A0F; color: #FFFFFF !important; }
-    
-    /* Responsive Navigation */
-    div[data-testid="stRadio"] > div {
-        display: flex;
-        flex-direction: row;
-        justify-content: center;
-        background: #111118;
-        padding: 10px;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.1);
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    
-    /* Headers - Brighter for Mobile */
-    h1 { color: #FFFFFF !important; font-weight: 800; font-size: 2.2rem; margin-bottom: 1rem; }
-    h2, h3, h4, h5, h6, p, span, label { color: #F8FAFC !important; font-weight: 600; }
-    
-    /* Inputs */
-    .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-        background: rgba(255, 255, 255, 0.1) !important; 
-        color: #FFFFFF !important; 
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 8px !important;
-        padding: 15px !important;
-        font-size: 16px !important; 
-    }
-    .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
-        border: 1px solid #3B82F6 !important;
-    }
-    
-    /* Buttons */
-    .stButton>button {
-        background: #2563EB !important;
-        color: white !important;
-        border-radius: 8px !important;
-        border: none !important;
-        padding: 15px 30px !important;
-        font-weight: 600 !important;
-        font-size: 16px !important;
-        width: 100%;
-        transition: 0.3s;
-    }
-    .stButton>button:hover { background: #1D4ED8 !important; transform: translateY(-2px); }
-    
-    /* Mobile Fixes */
-    @media (max-width: 768px) {
-        div[data-testid="stRadio"] > div {
-            flex-direction: column !important; 
-            align-items: stretch;
-        }
-        h1 { font-size: 1.8rem; text-align: center; }
-        .stApp { padding-top: 10px; }
-    }
-    </style>
-""", unsafe_allow_html=True)
 
 st.markdown("<h1 style='text-align: center; color: #FFFFFF;'>⚡ Bid2Rank Agency Suite</h1>", unsafe_allow_html=True)
 
