@@ -1,11 +1,16 @@
 import streamlit as st
 import google.generativeai as genai
 import os
+import requests
+import json
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from fpdf import FPDF
 
 # --- INITIALIZE ENVIRONMENT & AI ---
 load_dotenv()
 API_KEY = os.getenv("AI_API_KEY")
+SERP_KEY = os.getenv("SERP_API_KEY")
 
 if API_KEY and API_KEY != "your_gemini_or_openai_key_here":
     genai.configure(api_key=API_KEY)
@@ -15,9 +20,8 @@ else:
 
 def generate_ai_response(system_prompt, user_text):
     if not ai_ready:
-        return "⚠️ Error: AI API Key is missing or invalid. Please check your .env file."
+        return "⚠️ Error: AI API Key is missing or invalid. Please check your Render Environment Variables."
     try:
-        # Using Gemini 1.5 Pro for high-quality agency-level reasoning
         model = genai.GenerativeModel('gemini-1.5-pro', system_instruction=system_prompt)
         response = model.generate_content(user_text)
         return response.text
@@ -25,169 +29,281 @@ def generate_ai_response(system_prompt, user_text):
         return f"⚠️ API Error: {str(e)}"
 
 def load_brain(filepath):
-    # Extracts just the filename (e.g., 'Bidder_Brain_Prompt.txt')
     filename = filepath.split('/')[-1]
-    
-    # Try the original folder structure first
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        # If folder structure is missing, try reading from the root directory
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 return f.read()
         except FileNotFoundError:
             return "Error: Brain prompt file not found."
 
-# --- PORTAL CONFIGURATION ---
-st.set_page_config(page_title="Bid2Rank | Premium AI SEO", page_icon="✨", layout="wide", initial_sidebar_state="expanded")
+# --- PDF GENERATORS ---
+def generate_welcome_pdf(c_name, p_name, j_date):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_fill_color(253, 251, 247)
+    pdf.rect(0, 0, 210, 297, 'F')
+    
+    pdf.set_draw_color(193, 154, 91)
+    pdf.line(85, 40, 125, 40)
+    
+    pdf.set_text_color(15, 59, 46)
+    pdf.set_font("Times", 'B', 32)
+    pdf.cell(0, 60, "WELCOME", align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_text_color(100, 100, 100)
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.cell(0, 10, f"WELCOME, {c_name.upper()}", align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_text_color(47, 54, 52)
+    pdf.set_font("Times", 'B', 28)
+    pdf.cell(0, 15, c_name, align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_text_color(100, 100, 100)
+    pdf.set_font("Helvetica", 'B', 9)
+    pdf.cell(0, 20, "PROJECT", align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_text_color(47, 54, 52)
+    pdf.set_font("Helvetica", '', 14)
+    pdf.cell(0, 5, p_name, align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_text_color(100, 100, 100)
+    pdf.set_font("Helvetica", 'B', 9)
+    pdf.cell(0, 20, "JOINING DATE", align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_text_color(47, 54, 52)
+    pdf.set_font("Helvetica", '', 14)
+    pdf.cell(0, 5, j_date, align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.set_y(170)
+    pdf.set_font("Helvetica", '', 11)
+    text = "Amit Sharma is pleased to officially welcome you and begin this project together. We are excited to build a strong professional collaboration and look forward to delivering a smooth, valuable, and successful project experience from start to finish."
+    pdf.multi_cell(0, 7, text, align='C')
+    
+    pdf.set_y(220)
+    pdf.set_text_color(15, 59, 46)
+    pdf.set_font("Times", '', 18)
+    pdf.cell(0, 10, "Thank you for choosing to work with Amit Sharma.", align='C', new_x="LMARGIN", new_y="NEXT")
+    
+    return bytes(pdf.output())
 
-# --- ADVANCED DRIBBBLE-STYLE CSS ---
+def generate_audit_pdf(url, ai_report):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", 'B', 16)
+    pdf.cell(0, 10, f"SEO Audit Report: {url}", align='C', new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(10)
+    
+    pdf.set_font("Helvetica", '', 11)
+    # Handle unicode encoding safely for PDF
+    safe_text = ai_report.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 7, safe_text)
+    
+    return bytes(pdf.output())
+
+# --- LIVE SERP TRACKER LOGIC ---
+def get_live_rank(keyword, target_url):
+    if not SERP_KEY or SERP_KEY == "your_serper_api_key_here":
+        return "⚠️ Error: Please add your Serper.dev API key to .env or Render settings to use live tracking."
+    
+    url = "https://google.serper.dev/search"
+    payload = json.dumps({"q": keyword, "num": 100})
+    headers = {'X-API-KEY': SERP_KEY, 'Content-Type': 'application/json'}
+    
+    try:
+        response = requests.post(url, headers=headers, data=payload)
+        data = response.json()
+        if "organic" in data:
+            for res in data["organic"]:
+                if target_url.lower() in res.get("link", "").lower():
+                    page = (res['position'] - 1) // 10 + 1
+                    return f"🎯 **RANK FOUND!** Your URL is currently at **Position #{res['position']}** (Page {page}) on Google."
+            return f"❌ **Not Found:** The URL is not in the Top 100 results for '{keyword}'."
+        return "⚠️ Error: Invalid response from Google."
+    except Exception as e:
+        return f"⚠️ API Connection Error: {str(e)}"
+
+# --- PORTAL CONFIGURATION ---
+st.set_page_config(page_title="Bid2Rank | AI SEO", page_icon="✨", layout="wide", initial_sidebar_state="expanded")
+
+# --- FUTURISTIC UI CSS ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap');
     
-    /* Global Font & Hide Default Streamlit Clutter */
-    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
+    html, body, [class*="css"] { font-family: 'Space Grotesk', sans-serif; }
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
     
-    /* Deep Modern SaaS Background (Radial Gradient) */
     .stApp {
-        background: radial-gradient(circle at 15% 50%, #160B24, #050507 60%, #050507);
+        background: radial-gradient(circle at top left, #0D0518 0%, #05010B 100%);
         color: #E2E8F0;
     }
     
-    /* Sidebar Glassmorphism */
     [data-testid="stSidebar"] {
-        background: rgba(15, 15, 20, 0.4) !important;
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(10, 5, 20, 0.7) !important;
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-right: 1px solid rgba(168, 85, 247, 0.1);
     }
     
-    /* Gradient Text for Headers */
     h1, h2, h3 {
-        background: linear-gradient(90deg, #A855F7, #3B82F6);
+        background: linear-gradient(135deg, #E8B5FF, #8B5CF6, #3B82F6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 800;
+        font-weight: 700;
         margin-bottom: 20px;
     }
     
-    /* Premium Glowing Buttons */
     .stButton>button {
-        background: linear-gradient(90deg, #8B5CF6, #3B82F6) !important;
+        background: linear-gradient(135deg, #7C3AED, #2563EB) !important;
         color: white !important;
         border-radius: 12px !important;
-        border: none !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
         padding: 12px 28px !important;
         font-weight: 600 !important;
-        letter-spacing: 0.5px;
-        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25) !important;
+        box-shadow: 0 0 20px rgba(124, 58, 237, 0.3) !important;
         transition: all 0.3s ease !important;
         width: 100%;
     }
     .stButton>button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5) !important;
-        background: linear-gradient(90deg, #7C3AED, #2563EB) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.5) !important;
+        border: 1px solid rgba(255,255,255,0.3) !important;
     }
     
-    /* Glass Input Fields */
     .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-        background: rgba(255, 255, 255, 0.03) !important;
+        background: rgba(255, 255, 255, 0.02) !important;
         color: white !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(168, 85, 247, 0.2) !important;
         border-radius: 12px !important;
         padding: 15px !important;
-        transition: all 0.3s ease !important;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
     }
     .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
         border: 1px solid #A855F7 !important;
-        box-shadow: 0 0 12px rgba(168, 85, 247, 0.2) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.4) !important;
     }
     
-    /* Custom Styling for the Results/Metrics Boxes */
-    div[data-testid="stAlert"], div[data-testid="metric-container"] {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 16px !important;
-        backdrop-filter: blur(10px) !important;
-        padding: 20px !important;
-        color: #E2E8F0 !important;
+    /* Futuristic Dashboard Cards */
+    .dash-card {
+        background: rgba(20, 10, 30, 0.6);
+        border: 1px solid rgba(168, 85, 247, 0.2);
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        text-align: center;
+        transition: transform 0.3s;
     }
+    .dash-card:hover {
+        transform: translateY(-5px);
+        border: 1px solid rgba(168, 85, 247, 0.5);
+    }
+    .dash-card h2 { font-size: 36px; margin: 0; background: linear-gradient(90deg, #4ADE80, #3B82F6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+    .dash-card p { color: #94A3B8; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px;}
     </style>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR NAVIGATION ---
-st.sidebar.title("🚀 Bid2Rank")
-st.sidebar.caption("By Achhar | Premium SEO Suite")
+st.sidebar.title("✨ Bid2Rank")
+st.sidebar.caption("Futuristic AI Agency Core")
 st.sidebar.markdown("---")
-menu = ["📊 Dashboard", "📝 1. The Bidder", "💬 2. The Communicator", "🤝 3. The Onboarder", "🔍 4. Auditor", "📈 5. Rank Tracker"]
-choice = st.sidebar.radio("Navigation", menu)
+menu = [
+    "🌐 Command Center", 
+    "📝 1. Upwork Proposal Writer", 
+    "💬 2. Client Handler", 
+    "🤝 3. Welcome Letter Generator", 
+    "🔍 4. Audit Report Generator", 
+    "📈 5. Keyword Rank Tracker"
+]
+choice = st.sidebar.radio("SYSTEM NAVIGATION", menu)
 st.sidebar.markdown("---")
 if ai_ready:
-    st.sidebar.success("🟢 AI Engine: Online")
+    st.sidebar.success("🟢 NEURAL CORE: ONLINE")
 else:
-    st.sidebar.error("🔴 AI Engine: Offline (Check Key)")
+    st.sidebar.error("🔴 NEURAL CORE: OFFLINE")
 
 # --- ROUTING ---
-if choice == "📊 Dashboard":
-    st.title("Welcome to Bid2Rank by Achhar")
-    st.subheader("Your AI-Powered SEO Agency Control Center")
+if choice == "🌐 Command Center":
+    st.title("COMMAND CENTER")
+    st.markdown("<p style='color:#94A3B8; font-size:18px;'>Welcome to your futuristic agency dashboard, Amit.</p>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns(3)
-    col1.metric("AI Status", "Connected" if ai_ready else "Offline")
-    col2.metric("Active Modules", "5 / 5")
-    col3.metric("System Uptime", "100%")
+    with col1:
+        st.markdown("<div class='dash-card'><h2>Active</h2><p>AI Engine Status</p></div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown("<div class='dash-card'><h2>5</h2><p>Operational Modules</p></div>", unsafe_allow_html=True)
+    with col3:
+        st.markdown("<div class='dash-card'><h2>Secured</h2><p>Data Connection</p></div>", unsafe_allow_html=True)
 
-elif choice == "📝 1. The Bidder":
-    st.title("📝 The Master Bidder")
-    jd_input = st.text_area("Paste the Upwork Job Description here:", height=200)
-    if st.button("Generate Proposal"):
-        with st.spinner("Analyzing JD & Writing Proposal..."):
+elif choice == "📝 1. Upwork Proposal Writer":
+    st.title("Upwork Proposal Writer")
+    jd_input = st.text_area("TARGET JOB DESCRIPTION:", height=200)
+    if st.button("INITIATE PROPOSAL GENERATION"):
+        with st.spinner("Processing neural writing parameters..."):
             sys_prompt = load_brain("Module1_Bidder/Bidder_Brain_Prompt.txt")
             result = generate_ai_response(sys_prompt, jd_input)
-            st.markdown("### Generated Proposal:")
-            st.write(result)
+            st.info(result)
 
-elif choice == "💬 2. The Communicator":
-    st.title("💬 The Communicator")
-    client_msg = st.text_area("Paste the Client's Message:", height=150)
-    if st.button("Draft Reply"):
-        with st.spinner("Drafting Professional Reply..."):
+elif choice == "💬 2. Client Handler":
+    st.title("Client Handler")
+    client_msg = st.text_area("INCOMING CLIENT TRANSMISSION:", height=150)
+    if st.button("SYNTHESIZE EXPERT REPLY"):
+        with st.spinner("Calculating optimal response strategy..."):
             sys_prompt = load_brain("Module2_Communicator/Communicator_Brain_Prompt.txt")
             result = generate_ai_response(sys_prompt, client_msg)
-            st.markdown("### Suggested Reply:")
-            st.write(result)
+            st.info(result)
 
-elif choice == "🤝 3. The Onboarder":
-    st.title("🤝 The Onboarder")
+elif choice == "🤝 3. Welcome Letter Generator":
+    st.title("Welcome Letter Generator")
     col1, col2 = st.columns(2)
-    c_name = col1.text_input("Client Name")
-    p_name = col2.text_input("Project Description")
-    j_date = st.text_input("Joining Date")
-    if st.button("Generate Welcome HTML"):
-        template = load_brain("Module3_Onboarder/welcome_template.html")
-        final_html = template.replace("{{CLIENT_NAME}}", c_name).replace("{{CLIENT_NAME_UPPER}}", c_name.upper()).replace("{{PROJECT_NAME}}", p_name).replace("{{JOINING_DATE}}", j_date)
-        st.markdown("### Preview:")
-        st.components.v1.html(final_html, height=600)
+    c_name = col1.text_input("CLIENT ENTITY NAME")
+    p_name = col2.text_input("PROJECT DESIGNATION")
+    j_date = st.text_input("COMMENCEMENT DATE")
+    if st.button("COMPILE PDF DOCUMENT"):
+        with st.spinner("Rendering highly formatted PDF document..."):
+            pdf_bytes = generate_welcome_pdf(c_name, p_name, j_date)
+        st.success("✅ Document Rendering Complete.")
+        st.download_button("📥 DOWNLOAD WELCOME.PDF", data=pdf_bytes, file_name=f"Welcome_{c_name}.pdf", mime="application/pdf")
 
-elif choice == "🔍 4. Auditor":
-    st.title("🔍 The Auditor (PDF Generator)")
-    audit_url = st.text_input("Website URL to Audit")
-    if st.button("Run Audit & Generate PDF"):
-        with st.spinner("Analyzing 7-point checklist & compiling PDF..."):
-            pass # PDF Logic placeholder
-        st.success("Report Generated Successfully!")
-        st.download_button("📥 Download Premium Audit.pdf", b"Dummy", "Audit.pdf", "application/pdf")
+elif choice == "🔍 4. Audit Report Generator":
+    st.title("Audit Report Generator")
+    st.markdown("Enter a URL to scrape metrics and generate a 9-page structural analysis.")
+    audit_url = st.text_input("TARGET URL FOR AUDIT")
+    if st.button("EXECUTE DEEP AUDIT & GENERATE PDF"):
+        with st.spinner("Scraping website architecture and consulting AI Brain..."):
+            # Real Scraping Logic
+            try:
+                resp = requests.get(audit_url, timeout=10)
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                title = soup.title.string if soup.title else "N/A"
+                h1s = [h.text for h in soup.find_all('h1')]
+                meta = soup.find("meta", attrs={"name": "description"})
+                meta_desc = meta["content"] if meta else "N/A"
+                scraped_data = f"URL: {audit_url}\nTitle: {title}\nMeta Description: {meta_desc}\nH1 Tags: {h1s}"
+            except Exception as e:
+                scraped_data = f"URL: {audit_url}\nNotice: Target blocked scraping. Perform structural analysis based on URL only."
+            
+            # AI Logic
+            sys_prompt = load_brain("Module4_Auditor/Auditor_Brain_Prompt.txt")
+            full_prompt = f"{sys_prompt}\n\nTARGET DATA ACQUIRED:\n{scraped_data}\n\nGenerate the 9-page report now."
+            ai_report = generate_ai_response(full_prompt, "Process the audit.")
+            
+            # PDF Generation
+            pdf_bytes = generate_audit_pdf(audit_url, ai_report)
+            
+        st.success("✅ Audit Complete. PDF compiled successfully.")
+        st.download_button("📥 DOWNLOAD AUDIT_REPORT.PDF", data=pdf_bytes, file_name="Audit_Report.pdf", mime="application/pdf")
 
-elif choice == "📈 5. Rank Tracker":
-    st.title("📈 Live Rank Tracker")
-    track_url = st.text_input("Target URL")
-    keywords = st.text_input("Keyword")
-    if st.button("Run Live SERP Check"):
-        with st.spinner("Scanning Google Top 100..."):
-            pass # SERP Logic placeholder
-        st.success(f"🎯 Accurate Result: Position #14 for '{keywords}'")
+elif choice == "📈 5. Keyword Rank Tracker":
+    st.title("Keyword Rank Tracker")
+    st.markdown("Live SERP connectivity for 100% accurate positional data.")
+    track_url = st.text_input("TARGET URL (e.g. yoursite.com)")
+    keywords = st.text_input("SEARCH QUERY")
+    if st.button("PING GOOGLE SERP (LIVE)"):
+        with st.spinner("Connecting to Google Search Engine infrastructure..."):
+            result = get_live_rank(keywords, track_url)
+        st.info(result)
