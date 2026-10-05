@@ -1,0 +1,6 @@
+streamlit
+openai
+google-generativeai
+requests
+beautifulsoup4
+python-dotenv
