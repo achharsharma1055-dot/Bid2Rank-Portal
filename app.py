@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+from openai import OpenAI
 import os
 import requests
 import json
@@ -10,34 +10,33 @@ from fpdf import FPDF
 
 # --- INITIALIZE ENVIRONMENT ---
 load_dotenv()
-API_KEY = os.getenv("AI_API_KEY")
-# Hardcoded SERP key fallback so the user never has to type it again
+
+# Hardcoded API Keys to permanently solve the issues
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
 SERP_KEY = os.getenv("SERP_API_KEY", "6e331ec051647949b4a4745dce40cd91fca4445d")
 
-if API_KEY and API_KEY != "your_gemini_or_openai_key_here":
-    genai.configure(api_key=API_KEY)
-    ai_ready = True
-else:
-    ai_ready = False
+ai_ready = bool(OPENROUTER_API_KEY)
+if ai_ready:
+    client = OpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=OPENROUTER_API_KEY,
+    )
 
-# FIX: Changed model to 'gemini-1.5-pro-latest' to fix the 404 error
 def generate_ai_response(system_prompt, user_text):
     if not ai_ready:
-        return "⚠️ Error: AI API Key is missing. Please check your Render Environment Variables."
+        return "⚠️ Error: OpenRouter API Key is missing."
     
-    # PERMANENT FIX: Try the exact model Google recommended, with a dynamic fallback
     try:
-        model = genai.GenerativeModel('gemini-3.8-flash', system_instruction=system_prompt)
-        response = model.generate_content(user_text)
-        return response.text
-    except Exception:
-        try:
-            # Universal fallback alias
-            model = genai.GenerativeModel('gemini-flash-latest', system_instruction=system_prompt)
-            response = model.generate_content(user_text)
-            return response.text
-        except Exception as e:
-            return f"⚠️ API Error: {str(e)}"
+        response = client.chat.completions.create(
+            model="meta-llama/llama-3-8b-instruct:free",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_text}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"⚠️ API Error: {str(e)}"
 
 def load_brain(filepath):
     filename = filepath.split('/')[-1]
@@ -58,13 +57,12 @@ def generate_welcome_pdf(c_name, p_name, j_date):
     pdf.set_fill_color(253, 251, 247) # Beige background
     pdf.rect(0, 0, 210, 297, 'F')
     
-    # Gold Line
     pdf.set_draw_color(193, 154, 91)
     pdf.set_line_width(0.5)
     pdf.line(85, 40, 125, 40)
     
     pdf.set_y(50)
-    pdf.set_text_color(15, 59, 46) # Dark Green
+    pdf.set_text_color(15, 59, 46)
     pdf.set_font("Times", 'B', 32)
     pdf.cell(0, 10, "WELCOME", align='C', ln=True)
     
@@ -113,9 +111,9 @@ def generate_audit_pdf(url, ai_report):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     
-    # Cover Page (Dark Theme)
+    # Cover Page
     pdf.add_page()
-    pdf.set_fill_color(22, 22, 22) # Dark background like the Figma design
+    pdf.set_fill_color(22, 22, 22)
     pdf.rect(0, 0, 210, 297, 'F')
     
     pdf.set_y(100)
@@ -123,7 +121,7 @@ def generate_audit_pdf(url, ai_report):
     pdf.set_font("Helvetica", 'B', 30)
     pdf.cell(0, 15, "Website Audit Report", align='L', ln=True)
     
-    pdf.set_text_color(200, 150, 50) # Gold Accent
+    pdf.set_text_color(200, 150, 50)
     pdf.set_font("Times", 'I', 36)
     pdf.cell(0, 15, url, align='L', ln=True)
     
@@ -132,16 +130,15 @@ def generate_audit_pdf(url, ai_report):
     pdf.set_font("Helvetica", '', 12)
     pdf.cell(0, 10, "Prepared by Amit Sharma | SEO & Website Audit Specialist", align='L', ln=True)
     
-    # Content Pages (Light theme for readability, similar to their report)
+    # Content Pages
     pdf.add_page()
-    pdf.set_fill_color(245, 240, 235) # Off-white background
+    pdf.set_fill_color(245, 240, 235)
     pdf.rect(0, 0, 210, 297, 'F')
     
     pdf.set_text_color(30, 30, 30)
     pdf.set_font("Helvetica", '', 11)
     safe_text = ai_report.encode('latin-1', 'replace').decode('latin-1')
     
-    # Split text by newlines and add to PDF
     for line in safe_text.split('\n'):
         if "--- PAGE" in line or "---" in line:
             pdf.add_page()
@@ -180,7 +177,6 @@ def get_live_rank(keyword, target_url, serp_key):
 # --- PORTAL CONFIGURATION ---
 st.set_page_config(page_title="Bid2Rank | Pro SEO Suite", page_icon="⚡", layout="wide")
 
-# --- NEW FULL-WIDTH UI CSS (REMOVED SIDEBAR) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
@@ -188,10 +184,8 @@ st.markdown("""
     #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
     [data-testid="collapsedControl"] { display: none; }
     
-    /* Clean Dark Background */
     .stApp { background-color: #0A0A0F; color: #F8FAFC; }
     
-    /* Top Navigation Tabs Styling */
     div[data-testid="stRadio"] > div {
         display: flex;
         flex-direction: row;
@@ -203,11 +197,9 @@ st.markdown("""
         flex-wrap: wrap;
     }
     
-    /* Headers */
     h1 { color: #FFFFFF; font-weight: 800; font-size: 2.5rem; margin-bottom: 1rem; }
     h2, h3 { color: #94A3B8; font-weight: 600; }
     
-    /* Inputs */
     .stTextInput>div>div>input, .stTextArea>div>div>textarea {
         background: rgba(255, 255, 255, 0.05) !important;
         color: white !important;
@@ -219,7 +211,6 @@ st.markdown("""
         border: 1px solid #3B82F6 !important;
     }
     
-    /* Buttons */
     .stButton>button {
         background: #2563EB !important;
         color: white !important;
@@ -234,7 +225,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- TOP NAVIGATION ---
 st.markdown("<h1 style='text-align: center; color: #FFFFFF;'>⚡ Bid2Rank Agency Suite</h1>", unsafe_allow_html=True)
 
 menu = [
@@ -252,7 +242,7 @@ if choice == "Upwork Proposal Writer":
     st.markdown("### 📝 Upwork Proposal Writer")
     jd_input = st.text_area("Paste Target Job Description:", height=200)
     if st.button("Generate Expert Proposal"):
-        with st.spinner("Analyzing JD & Writing..."):
+        with st.spinner("Analyzing JD & Writing (via Llama 3)..."):
             sys_prompt = load_brain("Module1_Bidder/Bidder_Brain_Prompt.txt")
             st.info(generate_ai_response(sys_prompt, jd_input))
 
@@ -260,7 +250,7 @@ elif choice == "Client Handler":
     st.markdown("### 💬 Client Handler")
     client_msg = st.text_area("Paste Incoming Client Message:", height=150)
     if st.button("Synthesize Expert Reply"):
-        with st.spinner("Drafting Response..."):
+        with st.spinner("Drafting Response (via Llama 3)..."):
             sys_prompt = load_brain("Module2_Communicator/Communicator_Brain_Prompt.txt")
             st.info(generate_ai_response(sys_prompt, client_msg))
 
@@ -283,10 +273,8 @@ elif choice == "Audit Report Generator":
     audit_url = st.text_input("Target Website URL")
     
     if st.button("Execute Deep Audit & Generate PDF"):
-        progress_text = "Operation in progress. Please wait."
         my_bar = st.progress(0, text="Starting scraping protocol...")
         
-        # 1. Scraping
         try:
             my_bar.progress(30, text="Scraping website meta data & H1 tags...")
             resp = requests.get(audit_url, timeout=15)
@@ -299,13 +287,11 @@ elif choice == "Audit Report Generator":
         except Exception:
             scraped_data = f"URL: {audit_url}\nNotice: Target blocked scraping. Performing structural analysis based on URL only."
             
-        # 2. AI Analysis
-        my_bar.progress(60, text="Analyzing 7-point SEO checklist with AI...")
+        my_bar.progress(60, text="Analyzing 7-point SEO checklist with Llama 3...")
         sys_prompt = load_brain("Module4_Auditor/Auditor_Brain_Prompt.txt")
         full_prompt = f"{sys_prompt}\n\nTARGET DATA ACQUIRED:\n{scraped_data}\n\nStrictly format output into 9 sections (--- PAGE 1 ---, etc.)"
         ai_report = generate_ai_response(full_prompt, "Process the audit.")
         
-        # 3. PDF Generation
         my_bar.progress(90, text="Compiling dark-theme PDF report...")
         pdf_bytes = generate_audit_pdf(audit_url, ai_report)
         
@@ -315,12 +301,10 @@ elif choice == "Audit Report Generator":
 
 elif choice == "Keyword Rank Tracker":
     st.markdown("### 📈 Keyword Rank Tracker")
-    
     track_url = st.text_input("Target URL (e.g. yoursite.com)")
     keywords = st.text_input("Search Query")
     
     if st.button("Ping Google SERP (Live)"):
         with st.spinner("Scanning Google Top 100..."):
-            # Uses the hardcoded SERP_KEY permanently now
             result = get_live_rank(keywords, track_url, SERP_KEY)
         st.info(result)
