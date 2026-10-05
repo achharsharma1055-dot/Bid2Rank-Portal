@@ -25,8 +25,8 @@ def generate_ai_response(system_prompt, user_text):
     if not ai_ready:
         return "⚠️ Error: AI API Key is missing."
     try:
-        # Changed to 'gemini-1.5-flash' to fix the 404 error
-        model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_prompt)
+        # 2026 Update: Changed to 'gemini-2.5-flash'
+        model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=system_prompt)
         response = model.generate_content(user_text)
         return response.text
     except Exception as e:
