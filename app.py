@@ -37,7 +37,11 @@ def generate_ai_response(system_prompt, user_text):
     try:
         response = requests.post(url, headers=headers, json=data)
         if response.status_code == 200:
-            return response.json()["message"]["content"][0]["text"]
+            content_blocks = response.json().get("message", {}).get("content", [])
+            for block in content_blocks:
+                if block.get("type") == "text":
+                    return block.get("text", "")
+            return "⚠️ AI returned no text."
         else:
             return f"⚠️ API Error: {response.status_code} - {response.text}"
     except Exception as e:
