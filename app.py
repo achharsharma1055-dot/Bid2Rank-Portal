@@ -11,6 +11,8 @@ from fpdf import FPDF
 # --- INITIALIZE ENVIRONMENT ---
 load_dotenv()
 API_KEY = os.getenv("AI_API_KEY")
+# Hardcoded SERP key fallback so the user never has to type it again
+SERP_KEY = os.getenv("SERP_API_KEY", "6e331ec051647949b4a4745dce40cd91fca4445d")
 
 if API_KEY and API_KEY != "your_gemini_or_openai_key_here":
     genai.configure(api_key=API_KEY)
@@ -306,15 +308,12 @@ elif choice == "Audit Report Generator":
 
 elif choice == "Keyword Rank Tracker":
     st.markdown("### 📈 Keyword Rank Tracker")
-    st.warning("To get accurate live data, you must provide a free Serper.dev API key.")
-    manual_serp_key = st.text_input("Enter your Serper.dev API Key (Get from serper.dev):", type="password")
     
     track_url = st.text_input("Target URL (e.g. yoursite.com)")
     keywords = st.text_input("Search Query")
     
     if st.button("Ping Google SERP (Live)"):
         with st.spinner("Scanning Google Top 100..."):
-            # Use manual key if provided, else try env
-            active_key = manual_serp_key if manual_serp_key else SERP_KEY
-            result = get_live_rank(keywords, track_url, active_key)
+            # Uses the hardcoded SERP_KEY permanently now
+            result = get_live_rank(keywords, track_url, SERP_KEY)
         st.info(result)
