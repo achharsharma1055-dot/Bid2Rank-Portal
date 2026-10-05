@@ -1,5 +1,4 @@
 import streamlit as st
-from openai import OpenAI
 import os
 import requests
 import json
@@ -11,32 +10,38 @@ from fpdf import FPDF
 # --- INITIALIZE ENVIRONMENT ---
 load_dotenv()
 
-# Hardcoded API Keys to permanently solve the issues
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
+# Hardcoded Cohere API Key 
+COHERE_API_KEY = os.getenv("COHERE_API_KEY", "cZqVl9Q8VMwvHhDUG3n8v1rHypwWEQP7FNWUlkLl")
 SERP_KEY = os.getenv("SERP_API_KEY", "6e331ec051647949b4a4745dce40cd91fca4445d")
 
-ai_ready = bool(OPENROUTER_API_KEY)
-if ai_ready:
-    client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=OPENROUTER_API_KEY,
-    )
+ai_ready = bool(COHERE_API_KEY)
 
 def generate_ai_response(system_prompt, user_text):
     if not ai_ready:
-        return "⚠️ Error: OpenRouter API Key is missing."
+        return "⚠️ Error: Cohere API Key is missing."
+    
+    url = "https://api.cohere.ai/v2/chat"
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {COHERE_API_KEY}"
+    }
+    data = {
+        "model": "command-a-plus-05-2026",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_text}
+        ]
+    }
     
     try:
-        response = client.chat.completions.create(
-            model="meta-llama/llama-3-8b-instruct:free",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_text}
-            ]
-        )
-        return response.choices[0].message.content
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.json()["message"]["content"][0]["text"]
+        else:
+            return f"⚠️ API Error: {response.status_code} - {response.text}"
     except Exception as e:
-        return f"⚠️ API Error: {str(e)}"
+        return f"⚠️ Connection Error: {str(e)}"
 
 def load_brain(filepath):
     filename = filepath.split('/')[-1]
@@ -242,7 +247,7 @@ if choice == "Upwork Proposal Writer":
     st.markdown("### 📝 Upwork Proposal Writer")
     jd_input = st.text_area("Paste Target Job Description:", height=200)
     if st.button("Generate Expert Proposal"):
-        with st.spinner("Analyzing JD & Writing (via Llama 3)..."):
+        with st.spinner("Analyzing JD & Writing (via Cohere AI)..."):
             sys_prompt = load_brain("Module1_Bidder/Bidder_Brain_Prompt.txt")
             st.info(generate_ai_response(sys_prompt, jd_input))
 
@@ -250,7 +255,7 @@ elif choice == "Client Handler":
     st.markdown("### 💬 Client Handler")
     client_msg = st.text_area("Paste Incoming Client Message:", height=150)
     if st.button("Synthesize Expert Reply"):
-        with st.spinner("Drafting Response (via Llama 3)..."):
+        with st.spinner("Drafting Response (via Cohere AI)..."):
             sys_prompt = load_brain("Module2_Communicator/Communicator_Brain_Prompt.txt")
             st.info(generate_ai_response(sys_prompt, client_msg))
 
@@ -287,7 +292,7 @@ elif choice == "Audit Report Generator":
         except Exception:
             scraped_data = f"URL: {audit_url}\nNotice: Target blocked scraping. Performing structural analysis based on URL only."
             
-        my_bar.progress(60, text="Analyzing 7-point SEO checklist with Llama 3...")
+        my_bar.progress(60, text="Analyzing 7-point SEO checklist with Cohere AI...")
         sys_prompt = load_brain("Module4_Auditor/Auditor_Brain_Prompt.txt")
         full_prompt = f"{sys_prompt}\n\nTARGET DATA ACQUIRED:\n{scraped_data}\n\nStrictly format output into 9 sections (--- PAGE 1 ---, etc.)"
         ai_report = generate_ai_response(full_prompt, "Process the audit.")
