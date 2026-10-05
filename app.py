@@ -191,12 +191,15 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
     html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', sans-serif; }
     
-    /* Hide Streamlit Top UI (Running icon, menu, etc) */
-    #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
-    [data-testid="stHeader"] {display: none;}
-    [data-testid="stToolbar"] {display: none;}
-    [data-testid="collapsedControl"] { display: none; }
-    .stApp > header {display: none !important;}
+    /* AGGRESSIVELY HIDE STREAMLIT TOP UI (Running icon, menu, etc) */
+    header {visibility: hidden !important; display: none !important;}
+    .stApp > header {visibility: hidden !important; display: none !important;}
+    [data-testid="stHeader"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stStatusWidget"] {visibility: hidden !important; display: none !important;}
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    .stDeployButton {display: none !important;}
     
     /* Overall App Brightness */
     .stApp { background-color: #0A0A0F; color: #FFFFFF !important; }
@@ -220,12 +223,12 @@ st.markdown("""
     
     /* Inputs */
     .stTextInput>div>div>input, .stTextArea>div>div>textarea {
-        background: rgba(255, 255, 255, 0.1) !important; /* Brighter background */
-        color: #FFFFFF !important; /* Pure white text */
+        background: rgba(255, 255, 255, 0.1) !important; 
+        color: #FFFFFF !important; 
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 8px !important;
         padding: 15px !important;
-        font-size: 16px !important; /* Prevents iOS auto-zoom */
+        font-size: 16px !important; 
     }
     .stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
         border: 1px solid #3B82F6 !important;
@@ -248,7 +251,7 @@ st.markdown("""
     /* Mobile Fixes */
     @media (max-width: 768px) {
         div[data-testid="stRadio"] > div {
-            flex-direction: column !important; /* Stack vertically on phones */
+            flex-direction: column !important; 
             align-items: stretch;
         }
         h1 { font-size: 1.8rem; text-align: center; }
