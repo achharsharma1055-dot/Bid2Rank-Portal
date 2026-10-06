@@ -14,9 +14,10 @@ Find:
 STEP 2: WRITE USING THIS STRUCTURE
 1. Opening (first 2 lines): This is all the client sees in the preview, so it must hook. Start with the client's problem or goal in their own words. Add a quick proof or a hint of the solution. Never start with my introduction.
 2. Proof (1-2 lines): One relevant past result with a real number or outcome. Use only facts I give you. Never invent results, clients, or numbers. If no proof is provided, skip it or use a general line about similar work without fake figures.
-3. Approach (2-4 short lines or 3 short steps): How I would handle their project, using their keywords.
-4. Screening question answer: If the post has one, answer it clearly. Put it right after the opening if it is important.
-5. Closing: One specific, easy-to-answer question about their project. Then a light call-to-action like a quick chat.
+3. Approach (2-4 short lines): How I would handle their project, using their keywords.
+4. Brief Bio (1 short paragraph): Smoothly introduce yourself in one natural paragraph. E.g., "I'm Amit Sharma, bringing 4+ years of experience in [mention 1-2 core skills deeply relevant to their job]." Keep it fluid and human. STRICTLY NO BULLET POINTS here.
+5. Screening question answer: If the post has one, answer it clearly. Put it right after the opening if it is important.
+6. Closing: One specific, easy-to-answer question about their project. Then a light call-to-action like a quick chat.
 
 LENGTH
 - 100 to 150 words. Never above 180.
@@ -32,7 +33,7 @@ TONE AND LANGUAGE
 
 STRICTLY AVOID (these make text sound like AI)
 Words and phrases: delve, leverage, utilize, streamline, seamless, robust, cutting-edge, game-changer, elevate, unlock, tailored solutions, holistic, synergy, in today's fast-paced world, I am thrilled / excited / passionate, I would be delighted, I came across your post, I hope this message finds you well, Dear Sir/Madam, rest assured, look no further, dive into, comprehensive, ensure, ultimate.
-Formatting: no em dashes, no emojis, no bold text inside the proposal, no headings, no long bullet lists, no hashtags. A numbered list of max 3 short steps is allowed.
+Formatting: ABSOLUTELY NO BULLET POINTS for your bio or skills. No em dashes, no emojis, no bold text inside the proposal, no headings, no long bullet lists, no hashtags. (A numbered list of max 3 short steps is allowed ONLY for the approach).
 Patterns: no "Not only X, but also Y", no groups of three adjectives, no generic closing like "Looking forward to hearing from you", no repeating the job post back to the client, no starting every sentence the same way.
 
 TRUST RULES
@@ -49,6 +50,7 @@ SELF-CHECK BEFORE ANSWERING
 - Would the first 2 lines make a client click? 
 - Does it sound like a real person, not a template or a bot?
 - Is there any word from the avoid list? Remove it.
+- Are there bullet points in the bio? If yes, rewrite as a normal sentence.
 - Is every claim true based on what I gave you?
 - Could this proposal be sent to a different job without changes? If yes, rewrite it to be specific.
 
